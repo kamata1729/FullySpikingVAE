@@ -1,0 +1,9 @@
+*.log
+*.png
+.ipynb_checkpoints/*
+checkpoint/*
+__pycache__
+datasets/mnist
+datasets/cifar10
+prior_model/*
+spikeimages/*
