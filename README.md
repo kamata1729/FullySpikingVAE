@@ -38,6 +38,12 @@ args:
 - checkpoint: checkpoint path (if use pretrained model) 
 - device: device id of gpu, default 0
 
+You can watch the logs with below: 
+
+```
+tensorboard --logdir checkpoint --bind_all --port 8009
+```
+
 # Training ANN VAE
 As a comparison method, we prepared vanilla VAEs of the same network architecture built with ANN, and trained on the same settings.
 
