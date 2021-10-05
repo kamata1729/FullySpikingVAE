@@ -49,166 +49,7 @@ class LIFSpike(nn.Module):
     def state_update(self, u_t_n1, o_t_n1, W_mul_o_t1_n, tau=tau):
         u_t1_n1 = tau * u_t_n1 * (1 - o_t_n1) + W_mul_o_t1_n
         o_t1_n1 = SpikeAct.apply(u_t1_n1)
-        return u_t1_n1, o_t1_n1
-
-class LIFSpikeIncremental(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-    
-    def forward(self, x_t, u_t_1=None, o_t_1=None):
-        """
-        x_t: (N,C,H,W)
-        u_t_1: (N,C,H,W)
-        o_t_1: (N,C,H,W)
-        """
-        if u_t_1 is None:
-            u_t_1 = torch.zeros_like(x_t)
-        if o_t_1 is None:
-            o_t_1 = torch.zeros_like(x_t)
-        u_t, o_t = self.state_update(u_t_1, o_t_1, x_t)
-        return u_t, o_t
-
-    def state_update(self, u_t_n1, o_t_n1, W_mul_o_t1_n):
-        u_t1_n1 = tau * u_t_n1 * (1 - o_t_n1) + W_mul_o_t1_n
-        o_t1_n1 = SpikeAct.apply(u_t1_n1)
-        return u_t1_n1, o_t1_n1
-
-
-class tdLayer(nn.Module):
-    """
-        Converts a common layer to the time domain. The input tensor needs to have an additional time dimension, which in this case is on the last dimension of the data. When forwarding, a normal layer forward is performed for each time step of the data in that time dimension.
-
-    Args:
-        layer (nn.Module):
-            The layer needs to convert.
-        bn (nn.Module):
-            If batch-normalization is needed, the BN layer should be passed in together as a parameter.
-    """
-    def __init__(self, layer, bn=None):
-        super(tdLayer, self).__init__()
-        self.layer = layer
-        self.bn = bn
-
-    def forward(self, x):
-        nsteps = x.shape[-1]
-        is_linear = (len(x.shape)==3)
-        x_ = torch.zeros(self.layer(x[..., 0]).shape + (nsteps,), device=x.device)
-        for step in range(nsteps):
-            x_[..., step] = self.layer(x[..., step])
-
-        if is_linear: # (N,C,T) for linear layer
-            x_ = x_[:,:,None,None,:]
-
-        if self.bn is not None:
-            x_ = self.bn(x_)
-        
-        if is_linear:
-            x_ = x_[:,:,0,0,:]
-        return x_
-
-class tdLayerIncremental(nn.Module):
-    def __init__(self, layer, bn=None) -> None:
-        super().__init__()
-        self.layer = layer
-        self.bn = bn
-        self.spike = LIFSpikeIncremental()
-        self.reset()
-
-    def reset(self):
-        self.u_t_1 = None
-        self.o_t_1 = None
-
-    def forward(self, inputs):
-        """
-        x: (N,C,H,W) or (N,C)
-        """
-        x, t = inputs
-        if t == 0:
-            self.reset()
-
-        x = self.layer(x)
-        if self.bn:
-            x,_ = self.bn((x,t))
-        u_t, o_t = self.spike(x, self.u_t_1, self.o_t_1)
-        self.u_t_1 = u_t
-        self.u_t_1 = o_t
-        return o_t, t
-
-class BatchNorm1dIncremental(nn.BatchNorm1d):
-    def __init__(self, num_features, affine=True) -> None:
-        super().__init__(num_features, affine=False)
-        self.affine = affine
-        self.alpha = 1
-        if self.affine:
-            self.affine_weight = nn.Parameter(torch.ones(num_features))
-            self.affine_bias = nn.Parameter(torch.zeros(num_features))
-
-    def forward(self, inputs):
-        x,_ = inputs
-        x = super().forward(x)
-        x = self.alpha * Vth * x
-        if self.affine:
-            x = x * self.affine_weight[None,:] + self.affine_bias[None,:]
-            
-        return x
-
-
-class AdaptiveBatchNorm1dIncremental(nn.BatchNorm1d):
-    """
-        Implementation of tdBN. Link to related paper: https://arxiv.org/pdf/2011.05280. In short it is averaged over the time domain as well when doing BN.
-    Args:
-        num_features (int): same with nn.BatchNorm2d
-        eps (float): same with nn.BatchNorm2d
-        momentum (float): same with nn.BatchNorm2d
-        alpha (float): an addtional parameter which may change in resblock.
-        affine (bool): same with nn.BatchNorm2d
-        track_running_stats (bool): same with nn.BatchNorm2d
-    """
-    def __init__(self, num_features, eps=1e-05, momentum=0.1, alpha=1, affine=True, track_running_stats=True):
-        super(AdaptiveBatchNorm1dIncremental, self).__init__(
-            num_features, eps, momentum, affine, track_running_stats)
-        self.alpha = alpha
-        self.register_buffer("running_mean", torch.zeros(num_features, glv.n_steps)) # (C,T)
-        self.register_buffer("running_var", torch.ones(num_features, glv.n_steps)) # (C,T)
-        self.register_buffer("num_batches_tracked", torch.zeros(glv.n_steps)) # (T,)
-
-    def forward(self, inputs):
-        """
-        input: (N,C)
-        """
-        x, t = inputs
-        exponential_average_factor = 0.0
-
-        if self.training and self.track_running_stats:
-            if self.num_batches_tracked is not None:
-                self.num_batches_tracked[t] += 1
-                if self.momentum is None:  # use cumulative moving average
-                    exponential_average_factor = 1.0 / float(self.num_batches_tracked[t])
-                else:  # use exponential moving average
-                    exponential_average_factor = self.momentum
-
-        # calculate running estimates
-        if self.training:
-            mean = x.mean(0) # (C,)
-            # use biased var in train
-            var = x.var(0, unbiased=False) # (C,)
-            n = x.numel() / x.size(1)
-            with torch.no_grad():
-                self.running_mean[:,t] = exponential_average_factor * mean\
-                    + (1 - exponential_average_factor) * self.running_mean[:,t]
-                # update running_var with unbiased var
-                self.running_var[:,t] = exponential_average_factor * var * n / (n - 1)\
-                    + (1 - exponential_average_factor) * self.running_var[:,t]
-        else:
-            mean = self.running_mean[:,t]
-            var = self.running_var[:,t]
-
-        x = self.alpha * Vth * (x - mean[None, :]) / (torch.sqrt(var[None, :] + self.eps))
-        if self.affine:
-            x = x * self.weight[None, :] + self.bias[None, :]
-        
-        return x,t
-        
+        return u_t1_n1, o_t1_n1  
 
 class tdLinear(nn.Linear):
     def __init__(self, 
@@ -428,60 +269,6 @@ class tdBatchNorm(nn.BatchNorm2d):
         return input
 
 
-class IncrementaltdBatchNorm(nn.BatchNorm2d):
-    """
-        Implementation of tdBN. Link to related paper: https://arxiv.org/pdf/2011.05280. In short it is averaged over the time domain as well when doing BN.
-    Args:
-        num_features (int): same with nn.BatchNorm2d
-        eps (float): same with nn.BatchNorm2d
-        momentum (float): same with nn.BatchNorm2d
-        alpha (float): an addtional parameter which may change in resblock.
-        affine (bool): same with nn.BatchNorm2d
-        track_running_stats (bool): same with nn.BatchNorm2d
-    """
-    def __init__(self, num_features, eps=1e-05, momentum=0.1, alpha=1, affine=True, track_running_stats=True):
-        super(IncrementaltdBatchNorm, self).__init__(
-            num_features, eps, momentum, affine, track_running_stats)
-        self.alpha = alpha
-        #self.weight = nn.Parameter(torch.randn(num_features) * 0.5 + 1)
-        #self.weight.data = self.weight.data*2
-
-
-    def forward(self, input):
-        exponential_average_factor = 0.0
-
-        now_time = input.shape[-1]
-
-        if self.training and self.track_running_stats and now_time==glv.n_steps:
-            if self.num_batches_tracked is not None:
-                self.num_batches_tracked += 1
-                if self.momentum is None:  # use cumulative moving average
-                    exponential_average_factor = 1.0 / float(self.num_batches_tracked)
-                else:  # use exponential moving average
-                    exponential_average_factor = self.momentum
-
-        # calculate running estimates
-        if self.training and now_time==glv.n_steps:
-            mean = input.mean([0, 2, 3, 4])
-            # use biased var in train
-            var = input.var([0, 2, 3, 4], unbiased=False)
-            n = input.numel() / input.size(1)
-            with torch.no_grad():
-                self.running_mean = exponential_average_factor * mean\
-                    + (1 - exponential_average_factor) * self.running_mean
-                # update running_var with unbiased var
-                self.running_var = exponential_average_factor * var * n / (n - 1)\
-                    + (1 - exponential_average_factor) * self.running_var
-        else:
-            mean = self.running_mean
-            var = self.running_var
-
-        input = self.alpha * Vth * (input - mean[None, :, None, None, None]) / (torch.sqrt(var[None, :, None, None, None] + self.eps))
-        if self.affine:
-            input = input * self.weight[None, :, None, None, None] + self.bias[None, :, None, None, None]
-
-        return input
-
 class PSP(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -505,23 +292,18 @@ class PSP(torch.nn.Module):
 
 class MembraneOutputLayer(nn.Module):
     """
-    V_thが無限大のLIFニューロンの最後の時間の膜電位を出力
+    outputs the last time membrane potential of the LIF neuron with V_th=infty
     """
     def __init__(self) -> None:
         super().__init__()
         n_steps = glv.n_steps
-        #self.psp = PSP()
 
         arr = torch.arange(n_steps-1,-1,-1)
-        #arr = torch.pow(0.7, arr)
-        #arr = arr / torch.sum(arr)
-        #arr = arr * 1.5
         self.register_buffer("coef", torch.pow(0.8, arr)[None,None,None,None,:]) # (1,1,1,1,T)
 
     def forward(self, x):
         """
         x : (N,C,H,W,T)
         """
-        #x = self.psp(x)
         out = torch.sum(x*self.coef, dim=-1)
         return out
