@@ -1,6 +1,6 @@
 *.log
 .ipynb_checkpoints/*
-checkpoint/*
+
 __pycache__
 datasets/mnist
 datasets/cifar10

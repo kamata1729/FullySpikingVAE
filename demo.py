@@ -26,14 +26,14 @@ def test_sample(network, testloader):
 
         x_recon, q_z, p_z, sampled_z = network(spike_input, scheduled=False)
 
-        torchvision.utils.save_image((real_img+1)/2, f'demo_input.png')
-        torchvision.utils.save_image((x_recon+1)/2, f'demo_recons.png')
+        torchvision.utils.save_image((real_img+1)/2, f'demo_imgs/demo_input.png')
+        torchvision.utils.save_image((x_recon+1)/2, f'demo_imgs/demo_recons.png')
 
 def sample(network):
     network = network.eval()
     with torch.no_grad():
         sampled_x, sampled_z = network.sample(network_config['batch_size'])
-        torchvision.utils.save_image((sampled_x+1)/2, f'demo_sample.png')
+        torchvision.utils.save_image((sampled_x+1)/2, f'demo_imgs/demo_sample.png')
         
 
 def calc_inception_score(network):
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     net = fsvae.FSVAELarge()
     net = net.to(init_device)
     
-    checkpoint = torch.load('./checkpoint/demo/fsvae_celeba_demo.pth', map_location='cuda:0')
+    checkpoint = torch.load('./demo_checkpoint/fsvae_celeba_demo.pth', map_location='cuda:0')
     net.load_state_dict(checkpoint)    
 
     print("calculating inception score...")
@@ -104,8 +104,8 @@ if __name__ == '__main__':
     print(f"Inception score: {inception_s}")
     print(f'FID score: {fid_score}')
     print(f'Autoencoder Frechet score: {autoencoder_frechet_distance}')
-    print('save demo_input.png')
-    print('save demo_recons.png')
-    print('save demo_sample.png')
+    print('save demo_imgs/demo_input.png')
+    print('save demo_imgs/demo_recons.png')
+    print('save demo_imgs/demo_sample.png')
     print("###############################")
     
