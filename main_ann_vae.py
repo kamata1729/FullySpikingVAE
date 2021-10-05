@@ -224,9 +224,8 @@ if __name__ == '__main__':
         sample(net, e, batch_size=128)
 
         calc_inception_score(net, e)
-        #calc_autoencoder_frechet_distance(net, e)
-        #if (e % 10 ==0) or (e==max_epoch-1):
-        #    calc_clean_fid(net, e)
+        calc_autoencoder_frechet_distance(net, e)
+        calc_clean_fid(net, e)
         
         
     writer.close()

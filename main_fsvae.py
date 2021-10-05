@@ -202,10 +202,7 @@ def calc_inception_score(network, epoch, batch_size=256):
 def calc_clean_fid(network, epoch):
     network = network.eval()
     with torch.no_grad():
-        if (epoch%5 == 0) or epoch==glv.network_config['epochs']-1:
-            num_gen=5000
-        else:
-            num_gen=1000
+        num_gen=5000
         fid_score = clean_fid.get_clean_fid_score(network, glv.network_config['dataset'], init_device, num_gen)
         writer.add_scalar('Sample/FID', fid_score, epoch)
 
@@ -224,7 +221,7 @@ def calc_autoencoder_frechet_distance(network, epoch):
 
     with torch.no_grad():
         fid_score = autoencoder_fid.get_autoencoder_frechet_distance(network, dataset, init_device, 5000)
-        writer.add_scalar('Sample/FAD', fid_score, epoch)
+        writer.add_scalar('Sample/AutoencoderDist', fid_score, epoch)
         
 
 
@@ -331,8 +328,8 @@ if __name__ == '__main__':
 
         sample(net, e, batch_size=128)
         calc_inception_score(net, e)
-        #calc_autoencoder_frechet_distance(net, e)
-        #calc_clean_fid(net, e)
+        calc_autoencoder_frechet_distance(net, e)
+        calc_clean_fid(net, e)
         
     writer.close()
 

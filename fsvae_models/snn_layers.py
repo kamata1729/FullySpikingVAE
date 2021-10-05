@@ -232,8 +232,6 @@ class tdBatchNorm(nn.BatchNorm2d):
         super(tdBatchNorm, self).__init__(
             num_features, eps, momentum, affine, track_running_stats)
         self.alpha = alpha
-        #self.weight = nn.Parameter(torch.randn(num_features) * 0.5 + 1)
-        #self.weight.data = self.weight.data*2
 
     def forward(self, input):
         exponential_average_factor = 0.0

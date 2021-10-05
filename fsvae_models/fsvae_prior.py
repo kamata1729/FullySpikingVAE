@@ -75,20 +75,16 @@ class PriorBernoulliSTBP(nn.Module):
         batch_size = z_shape[0]
         z = z.detach()
 
-        z_t_minus = self.initial_input.repeat(batch_size,1,1) # z_<t 最初はz0=zeros:(B,C,1)
+        z_t_minus = self.initial_input.repeat(batch_size,1,1) # z_<t, z0=zeros:(B,C,1)
         if self.training:
             with torch.no_grad():
                 for t in range(self.n_steps-1):
-                    """
-                    T-1まで
-                    x_tとz_t-1からz_tを出したいが、逐次的な入力をまだ実装していないので、とりあえずt以下を全部入れ直している
-                    """
                     if t>=5 and random.random() < p: # scheduled sampling                    
                         outputs = self.layers(z_t_minus.detach()) #binary (B, C*k, t+1) z_<=t
                         p_z_t = outputs[...,-1] # (B, C*k, 1)
                         # sampling from p(z_t | z_<t)
                         prob1 = p_z_t.view(batch_size, self.channels, self.k).mean(-1) # (B,C)
-                        prob1 = prob1 + 1e-3 * torch.randn_like(prob1) # 0と1が同数のときにどちらからも取りたい
+                        prob1 = prob1 + 1e-3 * torch.randn_like(prob1) 
                         z_t = (prob1>0.5).float() # (B,C)
                         z_t = z_t.view(batch_size, self.channels, 1) #(B,C,1)
                         z_t_minus = torch.cat([z_t_minus, z_t], dim=-1) # (B,C,t+2)
@@ -97,8 +93,8 @@ class PriorBernoulliSTBP(nn.Module):
         else: # for test time
             z_t_minus = torch.cat([z_t_minus, z[:,:,:-1]], dim=-1) # (B,C,T)
 
-        z_t_minus = z_t_minus.detach() # (B,C,T) init_inputとT-1の分
-        p_z = self.layers(z_t_minus) # (B,C*k, T)
+        z_t_minus = z_t_minus.detach() # (B,C,T) z_{<=T-1} 
+        p_z = self.layers(z_t_minus) # (B,C*k,T)
         p_z = p_z.view(batch_size, self.channels, self.k, self.n_steps)# (B,C,k,T)
         return p_z
 
@@ -109,7 +105,7 @@ class PriorBernoulliSTBP(nn.Module):
             p_z_t = outputs[...,-1] # (B, C*k, 1)
 
             random_index = torch.randint(0, self.k, (batch_size*self.channels,)) \
-                            + torch.arange(start=0, end=batch_size*self.channels*self.k, step=self.k) #(B*C,) kの中から一つ持ってくる
+                            + torch.arange(start=0, end=batch_size*self.channels*self.k, step=self.k) #(B*C,) pick one from k
             random_index = random_index.to(z_minus_t.device)
 
             z_t = p_z_t.view(batch_size*self.channels*self.k)[random_index] # (B*C,)

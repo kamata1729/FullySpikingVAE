@@ -13,7 +13,7 @@ import metrics.inception_score as inception_score
 import metrics.clean_fid as clean_fid
 import metrics.autoencoder_fid as autoencoder_fid
 
-def test(network, testloader):
+def test_sample(network, testloader):
     n_steps = glv.network_config['n_steps']
 
     network = network.eval()
@@ -52,6 +52,23 @@ def calc_clean_fid(network):
         fid_score = clean_fid.get_clean_fid_score(network, glv.network_config['dataset'], init_device, num_gen)
     return fid_score
 
+def calc_autoencoder_frechet_distance(network):
+    network = network.eval()
+    if glv.network_config['dataset'] == "MNIST":
+        dataset = 'mnist'
+    elif glv.network_config['dataset'] == "FashionMNIST":
+        dataset = 'fashion'
+    elif glv.network_config['dataset'] == "CelebA":
+        dataset = 'celeba'
+    elif glv.network_config['dataset'] == "CIFAR10":
+        dataset = 'cifar10'
+    else:
+        raise ValueError()
+
+    with torch.no_grad():
+        score = autoencoder_fid.get_autoencoder_frechet_distance(network, dataset, init_device, 5000)
+    return score 
+
 if __name__ == '__main__':
 
     init_device = torch.device("cuda:0")
@@ -63,7 +80,7 @@ if __name__ == '__main__':
     glv.init(network_config, devs=[0])
 
     dataset_name = glv.network_config['dataset']
-    data_path = "./data"
+    data_path = "./data" # specify the path of dataset
     
     # load celeba dataset
     data_path = os.path.expanduser(data_path)
@@ -79,12 +96,14 @@ if __name__ == '__main__':
     inception_s = calc_inception_score(net)
     print("calculating fid score...")
     fid_score = calc_clean_fid(net)
-    test(net, test_loader)
+    autoencoder_frechet_distance = calc_autoencoder_frechet_distance(net)
+    test_sample(net, test_loader)
     sample(net)
 
     print("###############################")
     print(f"Inception score: {inception_s}")
     print(f'FID score: {fid_score}')
+    print(f'Autoencoder Frechet score: {autoencoder_frechet_distance}')
     print('save demo_input.png')
     print('save demo_recons.png')
     print('save demo_sample.png')

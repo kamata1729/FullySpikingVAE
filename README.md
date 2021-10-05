@@ -1,4 +1,10 @@
-# Fully Spiking VAE
+# Fully Spiking Variational Autoencoder
+official implementation of Fully Spiking Variational Autoencoder (FSVAE) 
+
+arxiv: https://arxiv.org/abs/2110.00375
+
+![overview](imgs/overview.png)
+
 # Get started
 
 1. install dependencies
@@ -33,6 +39,8 @@ args:
 - device: device id of gpu, default 0
 
 # Training ANN VAE
+As a comparison method, we prepared vanilla VAEs of the same network architecture built with ANN, and trained on the same settings.
+
 ```
 python main_ann_vae exp_name -dataset dataset_name
 ```
@@ -45,4 +53,17 @@ args:
 - checkpoint: checkpoint path (if use pretrained model) 
 - device: device id of gpu, default 0
 
+# Evaluation
+![results](imgs/results.png)
 
+# Generated Images
+![mnist](imgs/mnist_generated_images_appendix.png)
+![fashion](imgs/fashion_generated_images_appendix.png)
+![cifar](imgs/cifar_generated_images_appendix.png)
+![celeb](imgs/celeb_generated_images_appendix.png)
+
+# Reconstructed Images
+![mnist_recons](imgs/mnist_recons_appendix.png)
+![fashion_recons](imgs/fashion_recons_appendix.png)
+![cifar_recons](imgs/cifar_recons_appendix.png)
+![celeb_recons](imgs/celeb_recons_appendix.png)
