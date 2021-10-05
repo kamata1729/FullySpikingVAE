@@ -56,14 +56,15 @@ args:
 # Evaluation
 ![results](imgs/results.png)
 
+# Reconstructed Images
+![mnist_recons](imgs/mnist_recons_appendix.png)
+![fashion_recons](imgs/fashion_recons_appendix.png)
+![cifar_recons](imgs/cifar_recons_appendix.png)
+![celeb_recons](imgs/celeb_recons_appendix.png)
+
 # Generated Images
 ![mnist](imgs/mnist_generated_images_appendix.png)
 ![fashion](imgs/fashion_generated_images_appendix.png)
 ![cifar](imgs/cifar_generated_images_appendix.png)
 ![celeb](imgs/celeb_generated_images_appendix.png)
 
-# Reconstructed Images
-![mnist_recons](imgs/mnist_recons_appendix.png)
-![fashion_recons](imgs/fashion_recons_appendix.png)
-![cifar_recons](imgs/cifar_recons_appendix.png)
-![celeb_recons](imgs/celeb_recons_appendix.png)
