@@ -4,19 +4,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 import global_v as glv
 
-#steps = 2
 dt = 5
-#simwin = dt * steps
 a = 0.25
-aa = 0.5    # 梯度近似项 
-#Vth = 0.2   # 阈值电压 V_threshold
+aa = 0.5  
 Vth = 0.2
-#tau = 0.25  # 漏电常熟 tau
 tau = 0.25
 
 
 class SpikeAct(torch.autograd.Function):
-    """ 定义脉冲激活函数，并根据论文公式进行梯度的近似。
+    """ 
         Implementation of the spiking activation function with an approximation of gradient.
     """
     @staticmethod
@@ -36,7 +32,7 @@ class SpikeAct(torch.autograd.Function):
         return grad_input * hu
 
 class LIFSpike(nn.Module):
-    """对带有时间维度的张量进行一次LIF神经元的发放模拟，可以视为一个激活函数，用法类似ReLU。
+    """
         Generates spikes based on LIF module. It can be considered as an activation function and is used similar to ReLU. The input tensor needs to have an additional time dimension, which in this case is on the last dimension of the data.
     """
     def __init__(self):
@@ -79,13 +75,13 @@ class LIFSpikeIncremental(nn.Module):
 
 
 class tdLayer(nn.Module):
-    """将普通的层转换到时间域上。输入张量需要额外带有时间维，此处时间维在数据的最后一维上。前传时，对该时间维中的每一个时间步的数据都执行一次普通层的前传。
+    """
         Converts a common layer to the time domain. The input tensor needs to have an additional time dimension, which in this case is on the last dimension of the data. When forwarding, a normal layer forward is performed for each time step of the data in that time dimension.
 
     Args:
-        layer (nn.Module): 需要转换的层。
+        layer (nn.Module):
             The layer needs to convert.
-        bn (nn.Module): 如果需要加入BN，则将BN层一起当做参数传入。
+        bn (nn.Module):
             If batch-normalization is needed, the BN layer should be passed in together as a parameter.
     """
     def __init__(self, layer, bn=None):
@@ -158,7 +154,7 @@ class BatchNorm1dIncremental(nn.BatchNorm1d):
 
 
 class AdaptiveBatchNorm1dIncremental(nn.BatchNorm1d):
-    """tdBN的实现。相关论文链接：https://arxiv.org/pdf/2011.05280。具体是在BN时，也在时间域上作平均；并且在最后的系数中引入了alpha变量以及Vth。
+    """
         Implementation of tdBN. Link to related paper: https://arxiv.org/pdf/2011.05280. In short it is averaged over the time domain as well when doing BN.
     Args:
         num_features (int): same with nn.BatchNorm2d
@@ -381,7 +377,7 @@ class tdConvTranspose(nn.ConvTranspose3d):
         return x
 
 class tdBatchNorm(nn.BatchNorm2d):
-    """tdBN的实现。相关论文链接：https://arxiv.org/pdf/2011.05280。具体是在BN时，也在时间域上作平均；并且在最后的系数中引入了alpha变量以及Vth。
+    """
         Implementation of tdBN. Link to related paper: https://arxiv.org/pdf/2011.05280. In short it is averaged over the time domain as well when doing BN.
     Args:
         num_features (int): same with nn.BatchNorm2d
@@ -433,7 +429,7 @@ class tdBatchNorm(nn.BatchNorm2d):
 
 
 class IncrementaltdBatchNorm(nn.BatchNorm2d):
-    """tdBN的实现。相关论文链接：https://arxiv.org/pdf/2011.05280。具体是在BN时，也在时间域上作平均；并且在最后的系数中引入了alpha变量以及Vth。
+    """
         Implementation of tdBN. Link to related paper: https://arxiv.org/pdf/2011.05280. In short it is averaged over the time domain as well when doing BN.
     Args:
         num_features (int): same with nn.BatchNorm2d
