@@ -1,5 +1,4 @@
 *.log
-*.png
 .ipynb_checkpoints/*
 checkpoint/*
 __pycache__
