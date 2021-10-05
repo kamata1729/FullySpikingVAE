@@ -3,7 +3,7 @@ official implementation of Fully Spiking Variational Autoencoder (FSVAE)
 
 arxiv: https://arxiv.org/abs/2110.00375
 
-![overview](imgs/overview.png)
+![overview](https://github.com/kamata1729/FullySpikingVAE/blob/master/imgs/overview.png)
 
 # Get started
 
