@@ -38,7 +38,7 @@ args:
 - checkpoint: checkpoint path (if use pretrained model) 
 - device: device id of gpu, default 0
 
-You can watch the logs with below: 
+You can watch the logs with below command and access http://localhost:8009/ 
 
 ```
 tensorboard --logdir checkpoint --bind_all --port 8009
