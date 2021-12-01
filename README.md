@@ -1,5 +1,6 @@
 # Fully Spiking Variational Autoencoder
-official implementation of Fully Spiking Variational Autoencoder (FSVAE) 
+official implementation of Fully Spiking Variational Autoencoder
+[12/1] Accepted to AAAI2022!!
 
 arxiv: https://arxiv.org/abs/2110.00375
 
