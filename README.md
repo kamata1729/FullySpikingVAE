@@ -3,7 +3,7 @@ official implementation of Fully Spiking Variational Autoencoder
 
 Accepted to **AAAI2022**!!
 
-paper: https://www.aaai.org/AAAI22Papers/AAAI-5361.HiromichiK.pdf
+paper: https://ojs.aaai.org/index.php/AAAI/article/view/20665/20424
 
 arxiv: https://arxiv.org/abs/2110.00375
 
